@@ -4,7 +4,6 @@ from types import SimpleNamespace
 
 from dotenv import dotenv_values
 
-# This block must run BEFORE the app is imported, so every test uses the TEST database.
 test_settings = dotenv_values(Path(__file__).resolve().parent.parent / ".env.test")
 os.environ["DATABASE_URL"] = test_settings["DATABASE_URL"]
 os.environ["REDIS_URL"] = test_settings["REDIS_URL"]

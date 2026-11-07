@@ -41,13 +41,13 @@ class EmployeeOut(BaseModel):
 
 
 class EmployeeUpdate(BaseModel):
-    model_config=ConfigDict(str_strip_whitespace=True)
+    model_config=ConfigDict(extra="forbid",str_strip_whitespace=True)
 
     staff_code: str | None = Field(default=None,max_length=30)
     start_date: date | None = None
     schedule_id: int | None = None
     wage_type: WageType | None = None
-    Wage_rate: Decimal | None = Field(default=None,max_digits=12, decimal_places=2)
+    wage_rate: Decimal | None = Field(default=None,max_digits=12, decimal_places=2)
     role: Role | None = None
 
     @field_validator("staff_code")

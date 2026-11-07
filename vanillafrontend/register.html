@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Create Account | Staff Attendance</title>
+
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/base.css">
+    <link rel="stylesheet" href="./css/auth.css">
+
+    <script type="module" src="./js/pages/register.js"></script>
+</head>
+
+<body>
+
+    <main class="auth-container">
+
+        <section class="auth-card register-card">
+
+            <header class="auth-header">
+                <div class="brand-mark">SA</div>
+
+                <h1>Create your account</h1>
+
+                <p>
+                    Set up your business and start managing staff attendance.
+                </p>
+            </header>
+
+
+            <form id="register-form">
+
+                <div class="form-group">
+                    <label for="business-name">Business name</label>
+
+                    <input
+                        type="text"
+                        id="business-name"
+                        name="business_name"
+                        placeholder="Enter your business name"
+                        minlength="2"
+                        maxlength="150"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="full-name">Your full name</label>
+
+                    <input
+                        type="text"
+                        id="full-name"
+                        name="full_name"
+                        placeholder="Enter your full name"
+                        minlength="2"
+                        maxlength="150"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="email">Email address</label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="phone">Phone number</label>
+
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="Enter your phone number"
+                        maxlength="20"
+                    >
+
+                    <small class="form-hint">
+                        Optional.
+                    </small>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="timezone">Business timezone</label>
+
+                    <select
+                        id="timezone"
+                        name="timezone"
+                        required
+                    >
+                        <option value="">Detecting timezone...</option>
+                    </select>
+
+                    <small class="form-hint">
+                        Automatically detected from your browser.
+                        You can change it to your business's timezone.
+                    </small>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="currency">Business currency</label>
+
+                    <select
+                        id="currency"
+                        name="currency"
+                        required
+                    >
+                        <option value="">Select your currency</option>
+                    </select>
+
+                    <small class="form-hint">
+                        Used to display your business's wage and payroll amounts.
+                    </small>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Create a password"
+                        minlength="8"
+                        maxlength="128"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirm password</label>
+
+                    <input
+                        type="password"
+                        id="confirm-password"
+                        name="confirm_password"
+                        placeholder="Enter your password again"
+                        minlength="8"
+                        maxlength="128"
+                        required
+                    >
+                </div>
+
+
+                <p
+                    id="register-message"
+                    class="auth-message"
+                    aria-live="polite"
+                ></p>
+
+
+                <button
+                    type="submit"
+                    id="register-button"
+                    class="auth-button"
+                >
+                    Create account
+                </button>
+
+            </form>
+
+
+            <footer class="auth-footer">
+                Already have an account?
+
+                <a href="./login.html">Sign in</a>
+            </footer>
+
+        </section>
+
+    </main>
+
+</body>
+</html>

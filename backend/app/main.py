@@ -11,7 +11,7 @@ app: FastAPI = FastAPI(title="Staff Attendance Saas")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url],
+    allow_origins=[settings.frontend_url,settings.vanilla_frontend],
     allow_methods=["GET","POST","PUT","PATCH","DELETE"],
     allow_headers=["Authorization","Content-Type"],
 )

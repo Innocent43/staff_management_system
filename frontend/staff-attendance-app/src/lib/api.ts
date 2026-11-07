@@ -54,5 +54,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     throw new ApiError(await readErrorMessage(response), response.status);
   }
 
+  if (response.status === 204){
+    return undefined as T
+  }
   return (await response.json()) as T;
 }

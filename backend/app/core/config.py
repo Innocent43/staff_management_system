@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     access_token_expire_minute: int = 720
     redis_url: str = "redis://localhost:6379/0"
     frontend_url: str = "http://localhost:3000"
+    vanilla_frontend: str = "http://127.0.0.1:5500"
 
     
     smtp_host: str | None = None

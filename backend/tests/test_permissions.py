@@ -131,3 +131,14 @@ def test_an_employee_cannot_get_qr_codes_or_change_workplaces(client, team):
             assert create.status_code == 403
             assert regenerate.status_code == 403
             assert switch_off.status_code == 403
+
+
+
+
+
+def test_unknown_fields_are_rejected_instead_of_ignored(client, team):
+    response = client.patch(
+        f"/employees/{team.employee_id}", headers=auth(team.owner), json={"wage_rat": "100.00"}
+    )
+
+    assert response.status_code == 422

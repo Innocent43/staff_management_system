@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to your Staff Attendance account.">
+
+    <title>Login | Staff Attendance</title>
+
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/base.css">
+    <link rel="stylesheet" href="./css/auth.css">
+
+    <script type="module" src="./js/pages/login.js"></script>
+</head>
+<body>
+
+    <main class="auth-page">
+
+        <section class="auth-card">
+
+            <header class="auth-header">
+
+                <div class="brand-mark">SA</div>
+
+                <h1>Welcome back</h1>
+
+                <p>
+                    Sign in to your account to manage your attendance.
+                </p>
+
+            </header>
+
+            <form id="login-form">
+
+                <div class="form-group">
+                    <label for="email">Email address</label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <p
+                    id="login-message"
+                    class="form-message"
+                    role="alert"
+                    aria-live="polite"
+                ></p>
+
+                <button
+                    type="submit"
+                    id="login-button"
+                    class="auth-button"
+                >
+                    Sign in
+                </button>
+
+            </form>
+
+            <footer class="auth-footer">
+                <p>
+                    Don't have an account?
+                    <a href="./register.html">Create an account</a>
+                </p>
+            </footer>
+
+        </section>
+
+        <p class="auth-copyright">
+            Staff Attendance Management System
+        </p>
+
+    </main>
+
+</body>
+</html>

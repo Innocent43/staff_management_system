@@ -55,6 +55,8 @@ def invite_employee(db: Session, inviter: Membership, data: InviteRequest)-> Mem
     db.commit()
 
     invite_link = f"{settings.frontend_url}/accept-invite?token={raw_token}"
+    print(f"\n🚀 COPY THIS LINK FOR THE BROWSER:\n{invite_link}\n")
+    
     try:
         email_queue.enqueue(
             send_invite_email,
