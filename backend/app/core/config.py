@@ -8,10 +8,12 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
 
     
-    smtp_host: str | None = None
-    smtp_port: int = 587
-    smtp_user: str | None = None
-    smtp_password: str | None = None
+    brevo_api_key: str | None = None
+    
+    # smtp_host: str | None = None
+    # smtp_port: int = 587
+    # smtp_user: str | None = None
+    # smtp_password: str | None = None
     email_from: str = "no-reply@localhost"
 
 
