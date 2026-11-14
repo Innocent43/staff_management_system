@@ -9,7 +9,7 @@ class WorkplaceCreate(BaseModel):
 class WorkplaceUpdate(BaseModel):
     model_config=ConfigDict(str_strip_whitespace=True)
 
-    name: str | None = Field(default=0,min_length=2,max_length=100)
+    name: str | None = Field(default=None,min_length=2,max_length=100)
     active: bool | None = None
 
 

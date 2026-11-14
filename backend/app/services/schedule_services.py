@@ -73,7 +73,7 @@ def update_schedule(db: Session,actor: Membership,schedule_id: int,data: Schedul
                 entity_id=schedule.id,details={"changes": audit_changes},
             )
         db.commit()
-        return schedule
+    return schedule
 
 
 def delete_schedule(db: Session,actor: Membership,schedule_id: int)->None:

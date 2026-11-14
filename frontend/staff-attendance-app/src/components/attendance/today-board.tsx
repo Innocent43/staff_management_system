@@ -39,8 +39,8 @@ function BoardList({ rows, timezone }: { rows: TodayRow[]; timezone: string }) {
 
   return (
     <ul className="divide-y divide-navy-100">
-      {rows.map((row) => (
-        <li key={row.employee_id} className="flex items-center justify-between gap-3 py-3">
+      {rows.map((row,index) => (
+        <li key={`${row.employee_id}-${index}`} className="flex items-center justify-between gap-3 py-3">
           <div className="min-w-0">
             <p className="truncate font-medium text-navy-900">{row.employee_name}</p>
             <p className="text-sm text-navy-600">{describe(row, timezone)}</p>

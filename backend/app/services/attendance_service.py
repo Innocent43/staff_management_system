@@ -1,5 +1,6 @@
 from collections import defaultdict
-from datetime import datetime,timedelta,timezone
+from datetime import datetime,timedelta,timezone,date
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException,status
 from sqlalchemy import select
@@ -34,11 +35,70 @@ def _get_my_profile(db: Session,actor: Membership)->EmployeeProfile:
 def _last_envent(db:Session,employee_id: int)->AttendanceEvent | None:
     return db.scalar(select(AttendanceEvent).where(AttendanceEvent.employee_id == employee_id,AttendanceEvent.is_voided.is_(False),).order_by(AttendanceEvent.occurred_at.desc(),AttendanceEvent.id.desc()).limit(1))
 
-def _is_clocked_in(last_event: AttendanceEvent | None)->bool:
-    if last_event is None or last_event.event_type != EventType.clock_in:
+# def _is_clocked_in(last_event: AttendanceEvent | None)->bool:
+#     if last_event is None or last_event.event_type != EventType.clock_in:
+#         return False
+#     age = datetime.now(timezone.utc) - last_event.occurred_at
+#     return age < timedelta(hours=MAX_OPEN_SHIFT_HOURS)
+
+
+def _is_clocked_in(last_event: AttendanceEvent | None)-> bool:
+    if last_event is None:
         return False
-    age = datetime.now(timezone.utc) - last_event.occurred_at
-    return age < timedelta(hours=MAX_OPEN_SHIFT_HOURS)
+
+    return last_event.event_type == EventType.clock_in
+
+
+
+def _scheduled_shift_date(profile: EmployeeProfile,moment: datetime)->date:
+    """
+    Determine which scheduled workday an event belong to.
+
+    for overnight schedules, event before the scheduled end time belong to the previous day's shift.
+    """
+
+    timezone_name = profile.business.timezone
+    local_moment = moment.astimezone(ZoneInfo(timezone_name))
+
+    schedule = profile.schedule
+
+    if schedule is None:
+        return local_moment.date()
+
+    crosses_midnight = schedule.end_time < schedule.start_time
+
+    if crosses_midnight and local_moment.time() < schedule.end_time:
+        return local_moment.date() - timedelta(days=1)
+
+    return local_moment.date()
+
+
+
+
+def _has_clock_in_for_shift(db: Session, profile: EmployeeProfile, shift_date: date) -> bool:
+    """
+    Check whether this employee already clocked in during the scheduled workday, including an overnight shift.
+    """
+
+    timezone_name = profile.business.timezone
+    schedule = profile.schedule
+
+    crosses_midnight = (
+        schedule is not None and schedule.end_time < schedule.start_time
+    )
+    # Search the calendar dates that could contain this shift's events.
+    start = local_day_start(shift_date,timezone_name)
+
+    end_date = shift_date + timedelta(days=2 if crosses_midnight else 1)
+    end = local_day_start(end_date, timezone_name)
+
+
+    events = db.scalars(select(AttendanceEvent.occurred_at).where(AttendanceEvent.employee_id == profile.id, AttendanceEvent.event_type == EventType.clock_in,AttendanceEvent.is_voided.is_(False),AttendanceEvent.occurred_at >= start,AttendanceEvent.occurred_at < end,)).all()
+
+    return any(_scheduled_shift_date(profile,event_time) == shift_date for event_time in events)
+
+
+
 
 
 
@@ -56,7 +116,13 @@ def _check_qr_token(db: Session,actor: Membership,qr_token: str)->WorkplaceQR:
 
 def clock(db: Session,actor: Membership,data: ClockRequest)->AttendanceEvent:
     profile = _get_my_profile(db,actor)
-    db.refresh(profile,with_for_update=True)
+
+    profile = db.scalar(select(EmployeeProfile).where(EmployeeProfile.id == profile.id).with_for_update())
+
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee profile not found",)
+
+    # db.refresh(profile,with_for_update=True)
     repeat = db.scalar(select(AttendanceEvent).where(AttendanceEvent.employee_id == profile.id,AttendanceEvent.request_id == data.request_id,))
 
     if repeat:
@@ -64,13 +130,26 @@ def clock(db: Session,actor: Membership,data: ClockRequest)->AttendanceEvent:
 
     workplace = _check_qr_token(db,actor,data.qr_token)
 
-    clocked_in = _is_clocked_in(_last_envent(db,profile.id))
+    last_event = _last_envent(db,profile.id)
+
+
+    clocked_in = _is_clocked_in(last_event)
 
     if data.event_type == EventType.clock_in and clocked_in:
         raise HTTPException(status.HTTP_409_CONFLICT,"You already clocked in")
 
     if data.event_type == EventType.clock_out and not clocked_in:
         raise HTTPException(status.HTTP_409_CONFLICT,"You are not clocked in")
+
+        # Prevent a second attendance cycle on the same scheduled workday.
+
+    if data.event_type == EventType.clock_in:
+        now = datetime.now(timezone.utc)
+
+        shift_date = _scheduled_shift_date(profile,now)
+
+        if _has_clock_in_for_shift(db,profile,shift_date):
+            raise HTTPException(status.HTTP_409_CONFLICT,"You have already clocked in for this schedule shift." "Contact your manager if you need an attendance correction.",)
 
     event = AttendanceEvent(
         business_id=actor.business_id,
@@ -84,6 +163,7 @@ def clock(db: Session,actor: Membership,data: ClockRequest)->AttendanceEvent:
     )
     db.add(event)
     db.commit()
+    db.refresh(event)
     return event
 
 
@@ -159,7 +239,7 @@ def _profiles_query(actor: Membership):
 
 def _events_by_employee(db: Session,actor: Membership,start: datetime,end: datetime)-> dict[int, list[AttendanceEvent]]:
     query = (
-        select(AttendanceEvent).where(AttendanceEvent.business_id == actor.business_id,AttendanceEvent.is_voided.is_(False),AttendanceEvent.occurred_at >= start,AttendanceEvent.occurred_at < end,).order_by(AttendanceEvent.occurred_at)
+        select(AttendanceEvent).where(AttendanceEvent.business_id == actor.business_id,AttendanceEvent.is_voided.is_(False),AttendanceEvent.occurred_at >= start,AttendanceEvent.occurred_at < end,).order_by(AttendanceEvent.occurred_at,AttendanceEvent.id,)
     )
 
     events_by_employee = defaultdict(list)
@@ -240,29 +320,81 @@ def get_today(db: Session, actor: Membership)->list[TodayRowOut]:
         name = profile.membership.user.full_name
         shifts = build_shifts(profile,events_by_employee.get(profile.id,[]))
 
-        for shift in shifts:
-            if "in_progress" in shift.flags:
-                rows.append(TodayRowOut(employee_id=profile.id,employee_name=name,status="clocked_in",since=shift.clock_in,late_minutes=shift.late_minutes))
-                break
-            else:
-                todays_shifts = [
-                    shift for shift in shifts if _is_today(shift.clock_in,today,timezone_name) or _is_today(shift.clock_out,today,timezone_name)
-                ]
-                if todays_shifts:
-                    last_shift = todays_shifts[-1]
-                    rows.append(
-                        TodayRowOut(
-                            employee_id=profile.id,employee_name=name,status="clocked_out",since=last_shift.clock_in or last_shift.clock_out,late_minutes=last_shift.late_minutes,
+        active_shifts = [
+            shift for shift in shifts if "in_progress" in shift.flags
+        ]
 
-                        )
-                    )
-                else:
-                    rows.append(TodayRowOut(
-                        employee_id=profile.id,employee_name=name,status="not_in",
-                        since=None,late_minutes=0
-                    ))
-    rows.sort(key=lambda row: row.employee_name)
+        if active_shifts:
+            current_shift = active_shifts[-1]
+
+            rows.append(TodayRowOut(
+                employee_id=profile.id,
+                employee_name=name,
+                status="clocked_in",
+                since=current_shift.clock_in,
+                late_minutes=current_shift.late_minutes,
+            ))
+
+            continue
+
+            # Otherwise, find this employee's latest shift today.
+
+        todays_shifts = [
+            shift for shift in shifts if (
+                _is_today(shift.clock_in,today,timezone_name) or _is_today(shift.clock_out,today,timezone_name)
+            )
+        ]
+
+        if todays_shifts:
+            last_shift = todays_shifts[-1]
+
+            rows.append(TodayRowOut(
+                employee_id=profile.id,
+                employee_name=name,
+                status="clocked_out",
+                since=last_shift.clock_in or last_shift.clock_out,
+                late_minutes=last_shift.late_minutes,
+            ))
+
+        else:
+            rows.append(TodayRowOut(
+                employee_id=profile.id,
+                employee_name=name,
+                status="not_in",
+                since=None,
+                late_minutes=0,
+            ))
+    rows.sort(key=lambda row: row.employee_name.lower())
     return rows
+
+
+
+
+
+
+    #     for shift in shifts:
+    #         if "in_progress" in shift.flags:
+    #             rows.append(TodayRowOut(employee_id=profile.id,employee_name=name,status="clocked_in",since=shift.clock_in,late_minutes=shift.late_minutes))
+    #             break
+    #         else:
+    #             todays_shifts = [
+    #                 shift for shift in shifts if _is_today(shift.clock_in,today,timezone_name) or _is_today(shift.clock_out,today,timezone_name)
+    #             ]
+    #             if todays_shifts:
+    #                 last_shift = todays_shifts[-1]
+    #                 rows.append(
+    #                     TodayRowOut(
+    #                         employee_id=profile.id,employee_name=name,status="clocked_out",since=last_shift.clock_in or last_shift.clock_out,late_minutes=last_shift.late_minutes,
+
+    #                     )
+    #                 )
+    #             else:
+    #                 rows.append(TodayRowOut(
+    #                     employee_id=profile.id,employee_name=name,status="not_in",
+    #                     since=None,late_minutes=0
+    #                 ))
+    # rows.sort(key=lambda row: row.employee_name)
+    # return rows
 
 
 

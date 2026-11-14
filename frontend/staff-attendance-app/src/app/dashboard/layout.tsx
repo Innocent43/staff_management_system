@@ -1,5 +1,7 @@
 "use client";
 
+import { RouteGuard } from "@/components/layout/route-guard";
+
 import { useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 
@@ -57,7 +59,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar me={me} onOpenMenu={() => setMenuOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <RouteGuard>{children}</RouteGuard></main>
       </div>
     </div>
   );

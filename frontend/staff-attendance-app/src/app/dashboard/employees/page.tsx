@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 
-import { EmployeeList } from "@/components/employees/EmployeeList";
+import { EmployeeList } from "@/components/employees/employee-list";
+
+import { InviteDialog } from "@/components/employees/invite-dialog";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { MembershipStatus } from "@/types/employee";
 
@@ -35,6 +37,7 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-navy-900">Employees</h1>
+        <InviteDialog/>
         {/* Invite button goes here in the next chunk */}
       </div>
 
