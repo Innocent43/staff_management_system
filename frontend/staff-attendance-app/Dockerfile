@@ -25,4 +25,4 @@ COPY --from=builder --chown=app:app /app/.next/static ./.next/static
 
 USER app
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 node server.js"]
