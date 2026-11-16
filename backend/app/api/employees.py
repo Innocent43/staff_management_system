@@ -2,7 +2,6 @@ from fastapi import APIRouter,Depends,status,Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.enums import Role
 from app.models.employee_profile import EmployeeProfile
 from app.models.enums import MembershipStatus,Role
 from app.models.membership import Membership

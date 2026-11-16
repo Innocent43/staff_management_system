@@ -19,9 +19,10 @@ from app.schemas.attendance import (
     AttendanceFilters,AttendanceStatusOut,ClockRequest,ManageAttendanceFilters,ManualEventCreate,ShiftFilters,ShiftOut,TimeCorrection,TodayRowOut,VoidRequest,
     )
 from app.security.qr_tokens import is_qr_token_valid,read_workplace_id
-from app.services.shift_service import MAX_OPEN_SHIFT_HOURS,build_shifts
+from app.services.shift_service import build_shifts, scheduled_shift_date
 from app.services import employee_service
 from app.services.audit_service import audit
+from app.services.location_service import verify_workplace_location
 
 # MAX_OPEN_SHIFT_HOURS = 16
 
@@ -50,28 +51,6 @@ def _is_clocked_in(last_event: AttendanceEvent | None)-> bool:
 
 
 
-def _scheduled_shift_date(profile: EmployeeProfile,moment: datetime)->date:
-    """
-    Determine which scheduled workday an event belong to.
-
-    for overnight schedules, event before the scheduled end time belong to the previous day's shift.
-    """
-
-    timezone_name = profile.business.timezone
-    local_moment = moment.astimezone(ZoneInfo(timezone_name))
-
-    schedule = profile.schedule
-
-    if schedule is None:
-        return local_moment.date()
-
-    crosses_midnight = schedule.end_time < schedule.start_time
-
-    if crosses_midnight and local_moment.time() < schedule.end_time:
-        return local_moment.date() - timedelta(days=1)
-
-    return local_moment.date()
-
 
 
 
@@ -95,7 +74,7 @@ def _has_clock_in_for_shift(db: Session, profile: EmployeeProfile, shift_date: d
 
     events = db.scalars(select(AttendanceEvent.occurred_at).where(AttendanceEvent.employee_id == profile.id, AttendanceEvent.event_type == EventType.clock_in,AttendanceEvent.is_voided.is_(False),AttendanceEvent.occurred_at >= start,AttendanceEvent.occurred_at < end,)).all()
 
-    return any(_scheduled_shift_date(profile,event_time) == shift_date for event_time in events)
+    return any(scheduled_shift_date(profile,event_time) == shift_date for event_time in events)
 
 
 
@@ -114,42 +93,84 @@ def _check_qr_token(db: Session,actor: Membership,qr_token: str)->WorkplaceQR:
     return workplace
 
 
-def clock(db: Session,actor: Membership,data: ClockRequest)->AttendanceEvent:
-    profile = _get_my_profile(db,actor)
 
-    profile = db.scalar(select(EmployeeProfile).where(EmployeeProfile.id == profile.id).with_for_update())
+
+def clock(
+    db: Session,
+    actor: Membership,
+    data: ClockRequest,
+) -> AttendanceEvent:
+    profile = _get_my_profile(db, actor)
+
+    profile = db.scalar(
+        select(EmployeeProfile)
+        .where(EmployeeProfile.id == profile.id)
+        .with_for_update()
+    )
 
     if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee profile not found",)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee profile not found",
+        )
 
-    # db.refresh(profile,with_for_update=True)
-    repeat = db.scalar(select(AttendanceEvent).where(AttendanceEvent.employee_id == profile.id,AttendanceEvent.request_id == data.request_id,))
+    # Return an existing event if this request was already processed.
+    # This protects against duplicate submissions and network retries.
+    repeat = db.scalar(
+        select(AttendanceEvent).where(
+            AttendanceEvent.employee_id == profile.id,
+            AttendanceEvent.request_id == data.request_id,
+        )
+    )
 
     if repeat:
         return repeat
 
-    workplace = _check_qr_token(db,actor,data.qr_token)
+    # Validate the QR token and retrieve its workplace.
+    workplace = _check_qr_token(db, actor, data.qr_token)
 
-    last_event = _last_envent(db,profile.id)
+    # Verify the employee's location before creating the event.
+    distance_m = verify_workplace_location(
+        latitude=data.latitude,
+        longitude=data.longitude,
+        accuracy_m=data.accuracy_m,
+        workplace=workplace,
+    )
 
+    # A successful verification is True only when the workplace
+    # actually requires location verification.
+    location_verified = (
+        True if workplace.require_location_verification else None
+    )
+
+    last_event = _last_envent(db, profile.id)
 
     clocked_in = _is_clocked_in(last_event)
 
     if data.event_type == EventType.clock_in and clocked_in:
-        raise HTTPException(status.HTTP_409_CONFLICT,"You already clocked in")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "You already clocked in",
+        )
 
     if data.event_type == EventType.clock_out and not clocked_in:
-        raise HTTPException(status.HTTP_409_CONFLICT,"You are not clocked in")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "You are not clocked in",
+        )
 
-        # Prevent a second attendance cycle on the same scheduled workday.
-
+    # Prevent a second attendance cycle on the same scheduled workday.
     if data.event_type == EventType.clock_in:
         now = datetime.now(timezone.utc)
 
-        shift_date = _scheduled_shift_date(profile,now)
+        shift_date = scheduled_shift_date(profile, now)
 
-        if _has_clock_in_for_shift(db,profile,shift_date):
-            raise HTTPException(status.HTTP_409_CONFLICT,"You have already clocked in for this schedule shift." "Contact your manager if you need an attendance correction.",)
+        if _has_clock_in_for_shift(db, profile, shift_date):
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "You have already clocked in for this schedule shift. "
+                "Contact your manager if you need an attendance correction.",
+            )
 
     event = AttendanceEvent(
         business_id=actor.business_id,
@@ -159,12 +180,28 @@ def clock(db: Session,actor: Membership,data: ClockRequest)->AttendanceEvent:
         event_type=data.event_type,
         source=EventSource.qr,
         request_id=data.request_id,
-        
+
+        # Employee's location evidence.
+        latitude=data.latitude,
+        longitude=data.longitude,
+        accuracy_m=data.accuracy_m,
+
+        # Backend verification result.
+        location_verified=location_verified,
+        distance_from_workplace_m=distance_m,
+
+        # Preserve workplace coordinates at the time of attendance.
+        workplace_latitude=workplace.latitude,
+        workplace_longitude=workplace.longitude,
     )
+
     db.add(event)
     db.commit()
     db.refresh(event)
+
     return event
+
+
 
 
 def get_my_status(db: Session,actor: Membership)->AttendanceStatusOut:

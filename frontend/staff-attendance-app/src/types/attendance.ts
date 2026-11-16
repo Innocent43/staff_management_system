@@ -27,9 +27,23 @@ export type AttendanceEvent = {
   event_type: EventType;
   source: EventSource;
   occurred_at: string;
+  recorded_at: string;
   is_voided: boolean;
   workplace_id: number | null;
   note: string | null;
+
+  // Employee's recorded device location
+  latitude: number | null;
+  longitude: number | null;
+  accuracy_m: number | null;
+
+  // Backend location verification
+  location_verified: boolean | null;
+  distance_from_workplace_m: number | null;
+
+  // Workplace coordinates at the time of attendance
+  workplace_latitude: number | null;
+  workplace_longitude: number | null;
 };
 
 // ShiftOut: one clock-in paired with its clock-out, calculated by the backend
@@ -80,10 +94,15 @@ export type ShiftParams = {
 };
 
 // Bodies we send
+
+
 export type ClockInput = {
   qr_token: string;
   event_type: EventType;
   request_id: string;
+  latitude: number;
+  longitude: number;
+  accuracy_m: number;
 };
 
 export type ManualEventInput = {

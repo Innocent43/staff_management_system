@@ -1,66 +1,124 @@
+
 "use client";
 
-import { RouteGuard } from "@/components/layout/route-guard";
-
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 
+import { RouteGuard } from "@/components/layout/route-guard";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const { data: me, isPending, isError, refetch } = useMe();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Prevent background scrolling and support closing the drawer with Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
   if (isError) {
     return (
-      <main className="mx-auto max-w-md space-y-4 p-8">
-        <Alert>We could not load your account. Check your connection and try again.</Alert>
-        <Button onClick={() => refetch()}>Try again</Button>
+      <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center gap-5 px-5 py-10">
+        <Alert>
+          We could not load your account. Check your connection and try again.
+        </Alert>
+       <Button onClick={() => refetch()} className="min-h-11 w-full">
+  Try again
+</Button>
       </main>
     );
   }
 
   if (isPending || !me) {
-    return <p className="p-8 text-navy-600">Loading...</p>;
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-surface px-5">
+        <p className="text-base font-medium text-ink-secondary">
+          Loading your workspace...
+        </p>
+      </main>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-navy-50 lg:flex">
-      <aside className="hidden w-64 shrink-0 bg-navy-950 lg:block">
+    <div className="min-h-screen bg-surface lg:flex">
+      {/* Desktop sidebar */}
+      <aside className="hidden w-[272px] shrink-0 bg-brand-950 lg:block">
         <div className="sticky top-0 h-screen overflow-y-auto">
           <Sidebar role={me.role} />
         </div>
       </aside>
 
+      {/* Mobile navigation drawer */}
       {menuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation menu"
             onClick={() => setMenuOpen(false)}
-            aria-hidden="true"
+            className="absolute inset-0 size-full cursor-default bg-slate-950/60 backdrop-blur-[2px]"
           />
-          <aside className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-navy-950">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(false)}
-              aria-label="Close menu"
-              className="absolute right-3 top-4 rounded-lg p-2 text-navy-200 hover:bg-navy-900"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <Sidebar role={me.role} onNavigate={() => setMenuOpen(false)} />
+
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            className="absolute inset-y-0 left-0 flex w-[min(20rem,calc(100vw-2.5rem))] flex-col overflow-y-auto bg-brand-950 shadow-2xl"
+          >
+            <div className="flex min-h-16 items-center justify-end border-b border-white/10 px-4">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                className="flex size-11 items-center justify-center rounded-xl text-brand-100 transition hover:bg-white/10 hover:text-white"
+              >
+                <X className="size-6" />
+              </button>
+            </div>
+
+            <Sidebar
+              role={me.role}
+              onNavigate={() => setMenuOpen(false)}
+            />
           </aside>
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar me={me} onOpenMenu={() => setMenuOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <RouteGuard>{children}</RouteGuard></main>
+      {/* Main application area */}
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <TopBar
+          me={me}
+          onOpenMenu={() => setMenuOpen(true)}
+        />
+
+        <main className="w-full flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-[1600px]">
+            <RouteGuard>{children}</RouteGuard>
+          </div>
+        </main>
       </div>
     </div>
   );

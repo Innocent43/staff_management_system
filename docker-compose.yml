@@ -55,6 +55,8 @@ services:
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000
     restart: unless-stopped
+    env_file:
+      - ./frontend/staff-attendance-app/.env.local
     ports:
       - "3000:3000"
     depends_on:

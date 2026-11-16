@@ -4,24 +4,66 @@ from pydantic import BaseModel,ConfigDict,Field,model_validator,AwareDatetime
 
 from app.models.enums import EventSource,EventType,CorrectionAction
 
+
+
 class ClockRequest(BaseModel):
     qr_token: str
     event_type: EventType
-    request_id: str = Field(min_length=8,max_length=64)
+    request_id: str = Field(min_length=8, max_length=64)
+
+    # Location reported by the employee's device.
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+    # Estimated GPS accuracy, measured in metres.
+    accuracy_m: float | None = Field(default=None, gt=0, le=10000)
+
+    @model_validator(mode="after")
+    def validate_location_data(self):
+        location_values = (
+            self.latitude,
+            self.longitude,
+            self.accuracy_m,
+        )
+
+        # Either provide all three location values or provide none.
+        if any(value is not None for value in location_values):
+            if any(value is None for value in location_values):
+                raise ValueError(
+                    "Latitude, longitude and accuracy must be provided together."
+                )
+
+        return self
+
 
 
 
 class AttendanceOut(BaseModel):
-    model_config=ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     employee_id: int
     event_type: EventType
     source: EventSource
     occurred_at: datetime
+    recorded_at: datetime
     is_voided: bool
     workplace_id: int | None
     note: str | None
+
+    # Employee's recorded device location.
+    latitude: float | None
+    longitude: float | None
+    accuracy_m: float | None
+
+    # Backend's location verification evidence.
+    location_verified: bool | None
+    distance_from_workplace_m: float | None
+
+    # Workplace coordinates when attendance was recorded.
+    workplace_latitude: float | None
+    workplace_longitude: float | None
+
 
 
 class AttendanceStatusOut(BaseModel):
