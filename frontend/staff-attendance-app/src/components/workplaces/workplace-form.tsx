@@ -20,6 +20,7 @@ import { WorkplaceLocationMap } from "@/components/workplaces/workplace-location
 import { useSaveWorkplace } from "@/hooks/use-workplace-mutations";
 import { getErrorMessage } from "@/lib/errors";
 import type { Workplace } from "@/types/workplaces";
+import { WorkplaceAddressSearch } from "@/components/workplaces/workplace-address-search";
 
 const schema = z
   .object({
@@ -242,6 +243,7 @@ export function WorkplaceForm({ workplace, onClose }: Props) {
               {locating ? "Locating..." : "Use my location"}
             </Button>
           </div>
+          <WorkplaceAddressSearch onSelect={updateCoordinates} />
 
           {locationError && (
             <div

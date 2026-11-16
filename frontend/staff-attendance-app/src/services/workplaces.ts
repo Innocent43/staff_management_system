@@ -1,4 +1,7 @@
 import { api } from "@/lib/api";
+import type {
+  AddressSearchResponse,
+} from "@/types/workplaces";
 
 import type { QrToken,Workplace,WorkplaceCreateInput,WorkplaceUpdateInput } from "@/types/workplaces";
 
@@ -21,4 +24,11 @@ export function regenerateWorkplace(id: number) {
 
 export function getQrToken(id: number) {
   return api<QrToken>(`/workplaces/${id}/qr`);
+}
+
+
+export function searchWorkplaceAddresses(query: string) {
+  return api<AddressSearchResponse>(
+    `/workplaces/address-search?q=${encodeURIComponent(query)}`
+  );
 }

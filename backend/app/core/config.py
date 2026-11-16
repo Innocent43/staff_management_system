@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     
     brevo_api_key: str | None = None
+    geoapify_api_key: str | None = None
     
     # smtp_host: str | None = None
     # smtp_port: int = 587

@@ -32,6 +32,8 @@ services:
   
   api:
     build: ./backend
+    volumes:
+      - ./backend:/app
     restart: unless-stopped
     env_file:
       - ./backend/.env

@@ -109,6 +109,7 @@ def create_workplace(
     workplace = WorkplaceQR(
         business_id=actor.business_id,
         name=data.name,
+        address=data.address,
         secret=generate_workplace_secret(),
         latitude=data.latitude,
         longitude=data.longitude,
@@ -207,6 +208,14 @@ def update_workplace(
 )
 
     _validate_coordinates(new_latitude, new_longitude)
+    
+    coordinates_changed = (
+        new_latitude != workplace.latitude
+        or new_longitude != workplace.longitude
+    )
+
+    if coordinates_changed and "address" not in changes:
+        changes["address"] = None
 
     _validate_location_requirement(
     new_latitude,

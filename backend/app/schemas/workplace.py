@@ -15,6 +15,7 @@ class WorkplaceCreate(BaseModel):
     geofence_radius_m: int = Field(default=100, ge=10, le=1000)
 
     require_location_verification: bool = False
+    address: str | None = Field(default=None, max_length=500)
 
 
 class WorkplaceUpdate(BaseModel):
@@ -31,6 +32,7 @@ class WorkplaceUpdate(BaseModel):
 
     geofence_radius_m: int | None = Field(default=None, ge=10, le=1000)
     require_location_verification: bool | None = None
+    address: str | None = Field(default=None, max_length=500)
 
 
 class WorkplaceOut(BaseModel):
@@ -44,8 +46,30 @@ class WorkplaceOut(BaseModel):
     longitude: float | None
     geofence_radius_m: int
     require_location_verification: bool
+    address: str | None
 
 
 class QRTokenOut(BaseModel):
     token: str
     expires_in_seconds: int
+
+
+
+
+
+
+class AddressSuggestionOut(BaseModel):
+    id: str
+    formatted: str
+    address_line1: str | None = None
+    address_line2: str | None = None
+    latitude: float
+    longitude: float
+
+
+class AddressSearchOut(BaseModel):
+    suggestions: list[AddressSuggestionOut]
+
+
+class AddressReverseOut(BaseModel):
+    address: str | None = None

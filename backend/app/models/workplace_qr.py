@@ -83,3 +83,8 @@ class WorkplaceQR(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    address: Mapped[str | None] = mapped_column(
+    String(500),
+    nullable=True,
+)

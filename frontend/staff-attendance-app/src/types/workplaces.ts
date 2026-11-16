@@ -29,3 +29,17 @@ export type QrToken = {
   token: string;
   expires_in_seconds: number;
 };
+
+
+export type AddressSuggestion = {
+  id: string;
+  formatted: string;
+  address_line1: string | null;
+  address_line2: string | null;
+  latitude: number;
+  longitude: number;
+};
+
+export type AddressSearchResponse = {
+  suggestions: AddressSuggestion[];
+};
