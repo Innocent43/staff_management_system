@@ -1,10 +1,11 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState,useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { reverseGeocodeWorkplace } from "@/services/workplaces";
 import {
   Crosshair,
   MapPin,
@@ -29,6 +30,9 @@ const schema = z
       .trim()
       .min(2, "Enter at least 2 characters")
       .max(100, "Maximum 100 characters"),
+    
+    address: z.string().max(500).nullable(),
+
 
     latitude: z.number().min(-90).max(90).nullable(),
 
@@ -90,6 +94,7 @@ export function WorkplaceForm({ workplace, onClose }: Props) {
     resolver: zodResolver(schema),
     defaultValues: {
       name: workplace?.name ?? "",
+      address: workplace?.address ?? null,
       latitude: workplace?.latitude ?? null,
       longitude: workplace?.longitude ?? null,
       geofence_radius_m: workplace?.geofence_radius_m ?? 100,
@@ -100,25 +105,82 @@ export function WorkplaceForm({ workplace, onClose }: Props) {
 
   const latitude = useWatch({ control, name: "latitude" });
   const longitude = useWatch({ control, name: "longitude" });
+  const address = useWatch({control, name: "address"})
   const radius = useWatch({ control, name: "geofence_radius_m" });
   const requireVerification = useWatch({
     control,
     name: "require_location_verification",
   });
 
-  function updateCoordinates(lat: number, lng: number) {
-    setValue("latitude", Number(lat.toFixed(7)), {
+
+
+
+  const reverseGeocodeRequest = useRef(0);
+
+
+  async function updateCoordinates(
+  lat: number,
+  lng: number,
+  address?: string,
+) {
+  const latitude = Number(lat.toFixed(7));
+  const longitude = Number(lng.toFixed(7));
+
+  // Invalidate any previous reverse-geocoding request.
+  const requestId = ++reverseGeocodeRequest.current;
+
+  setValue("latitude", latitude, {
+    shouldDirty: true,
+    shouldValidate: true,
+  });
+
+  setValue("longitude", longitude, {
+    shouldDirty: true,
+    shouldValidate: true,
+  });
+
+  // A selected search suggestion already has a formatted address.
+  // Otherwise, clear the old address before looking up the new one.
+  setValue("address", address?.trim() || null, {
+    shouldDirty: true,
+  });
+
+  setLocationError(null);
+
+  if (address?.trim()) return;
+
+  try {
+    const result = await reverseGeocodeWorkplace(latitude, longitude);
+
+    // Ignore results belonging to an older location selection.
+    if (requestId !== reverseGeocodeRequest.current) return;
+
+    setValue("address", result.address?.trim() || null, {
       shouldDirty: true,
-      shouldValidate: true,
     });
 
-    setValue("longitude", Number(lng.toFixed(7)), {
+    if (!result.address) {
+      setLocationError(
+        "Location selected, but its address could not be determined. You can still save the coordinates.",
+      );
+    }
+  } catch {
+    if (requestId !== reverseGeocodeRequest.current) return;
+
+    setValue("address", null, {
       shouldDirty: true,
-      shouldValidate: true,
     });
 
-    setLocationError(null);
+    setLocationError(
+      "Location selected, but its address could not be determined. You can still save the coordinates.",
+    );
   }
+}
+
+
+
+
+
 
   function locateMe() {
     if (!navigator.geolocation) {
@@ -165,6 +227,7 @@ export function WorkplaceForm({ workplace, onClose }: Props) {
     save.mutate(
       {
         name: values.name,
+        address: values.address,
         latitude: values.latitude,
         longitude: values.longitude,
         geofence_radius_m: values.geofence_radius_m,
@@ -265,6 +328,18 @@ export function WorkplaceForm({ workplace, onClose }: Props) {
             Click the map to select the workplace location, or drag the
             marker to adjust it.
           </p>
+
+          {address && (
+  <div className="rounded-lg border border-navy-200 bg-navy-50 p-3">
+    <p className="text-xs font-medium text-navy-600">
+      Selected workplace address
+    </p>
+
+    <p className="mt-1 text-sm text-navy-900">
+      {address}
+    </p>
+  </div>
+)}
 
           {errors.latitude?.message && (
             <p className="text-sm text-red-600">

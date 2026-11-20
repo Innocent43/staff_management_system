@@ -17,7 +17,7 @@ import httpx
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
-from app.schemas.workplace import AddressSearchOut
+from app.schemas.workplace import AddressSearchOut,AddressReverseOut
 from app.security.rate_limit import check_rate_limit
 
 
@@ -133,6 +133,91 @@ async def search_workplace_addresses(
         })
 
     return {"suggestions": suggestions}
+
+
+
+
+
+@router.get("/reverse-geocode", response_model=AddressReverseOut)
+async def reverse_geocode_workplace(
+    latitude: float = Query(ge=-90, le=90),
+    longitude: float = Query(ge=-180, le=180),
+    membership: Membership = manager_or_owner,
+):
+    if not settings.geoapify_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Address lookup is temporarily unavailable.",
+        )
+
+    # Separate rate-limit bucket for reverse geocoding.
+    await run_in_threadpool(
+        check_rate_limit,
+        f"workplace-reverse-geocode:{membership.id}",
+        20,
+        60,
+    )
+
+    params = {
+        "lat": latitude,
+        "lon": longitude,
+        "apiKey": settings.geoapify_api_key,
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(8.0)
+        ) as client:
+            response = await client.get(
+                "https://api.geoapify.com/v1/geocode/reverse",
+                params=params,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Address lookup timed out. Please try again.",
+        )
+
+    except httpx.HTTPStatusError as exc:
+        logger.error(
+            "Geoapify reverse geocoding returned HTTP status %s",
+            exc.response.status_code,
+        )
+        raise HTTPException(
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+                if exc.response.status_code == 429
+                else status.HTTP_502_BAD_GATEWAY
+            ),
+            detail="Address lookup is temporarily unavailable.",
+        )
+
+    except (httpx.RequestError, ValueError):
+        logger.exception("Reverse geocoding request failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Address lookup is temporarily unavailable.",
+        )
+
+    features = data.get("features", [])
+
+    if not isinstance(features, list) or not features:
+        return {"address": None}
+
+    properties = features[0].get("properties", {})
+
+    if not isinstance(properties, dict):
+        return {"address": None}
+
+    address = properties.get("formatted")
+
+    if not isinstance(address, str) or not address.strip():
+        return {"address": None}
+
+    return {"address": address}
 
 
 

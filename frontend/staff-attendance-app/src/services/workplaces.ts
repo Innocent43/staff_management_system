@@ -32,3 +32,13 @@ export function searchWorkplaceAddresses(query: string) {
     `/workplaces/address-search?q=${encodeURIComponent(query)}`
   );
 }
+
+
+export function reverseGeocodeWorkplace(
+  latitude: number,
+  longitude: number,
+) {
+  return api<{ address: string | null }>(
+    `/workplaces/reverse-geocode?latitude=${latitude}&longitude=${longitude}`,
+  );
+}

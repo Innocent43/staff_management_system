@@ -10,7 +10,7 @@ import { getErrorMessage } from "@/lib/errors";
 import type { AddressSuggestion } from "@/types/workplaces";
 
 type Props = {
-  onSelect: (latitude: number, longitude: number) => void;
+  onSelect: (latitude: number, longitude: number,address: string,) => void;
 };
 
 export function WorkplaceAddressSearch({ onSelect }: Props) {
@@ -77,7 +77,7 @@ export function WorkplaceAddressSearch({ onSelect }: Props) {
     setSuggestions([]);
     setError(null);
 
-    onSelect(suggestion.latitude, suggestion.longitude);
+    onSelect(suggestion.latitude, suggestion.longitude, suggestion.formatted,);
   }
 
   return (

@@ -56,6 +56,7 @@ services:
       context: ./frontend/staff-attendance-app
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_GEOAPIFY_MAPS_API_KEY: ${NEXT_PUBLIC_GEOAPIFY_MAPS_API_KEY}
     restart: unless-stopped
     env_file:
       - ./frontend/staff-attendance-app/.env.local

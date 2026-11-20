@@ -49,7 +49,7 @@ function MapCenterUpdater({
 
     map.setView(
       position,
-      Math.max(map.getZoom(), 15),
+      Math.max(map.getZoom(), 14),
       { animate: true },
     );
   }, [map, position?.[0], position?.[1]]);
@@ -85,14 +85,28 @@ export default function WorkplaceMapInner({
     <div className="relative overflow-hidden rounded-xl border border-navy-200">
       <MapContainer
         center={initialCenter}
-        zoom={position ? 16 : 2}
+        zoom={position ? 14 : 2}
         scrollWheelZoom
         className="h-[340px] w-full sm:h-[400px]"
       >
-        <TileLayer
+        {/* <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        /> */}
+
+        {/* <TileLayer
+  attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a> | &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  url={`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_GEOAPIFY_MAPS_API_KEY}`}
+  maxZoom={20}
+/> */}
+
+
+
+<TileLayer
+  attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  url={`https://maps.geoapify.com/v1/tile/osm-carto/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_GEOAPIFY_MAPS_API_KEY}`}
+  maxZoom={20}
+/>
 
         <MapClickHandler onLocationChange={onLocationChange} />
 

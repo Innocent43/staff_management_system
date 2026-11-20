@@ -6,6 +6,7 @@ export type Workplace = {
   longitude: number | null;
   geofence_radius_m: number;
   require_location_verification: boolean;
+  address: string | null
 };
 
 export type WorkplaceCreateInput = {
@@ -14,6 +15,7 @@ export type WorkplaceCreateInput = {
   longitude?: number | null;
   geofence_radius_m?: number;
   require_location_verification?: boolean;
+  address?: string | null
 };
 
 export type WorkplaceUpdateInput = {
@@ -23,6 +25,7 @@ export type WorkplaceUpdateInput = {
   longitude?: number | null;
   geofence_radius_m?: number;
   require_location_verification?: boolean;
+  address?: string | null
 };
 
 export type QrToken = {
