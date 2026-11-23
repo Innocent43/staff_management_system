@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
 import type { MeResponse } from "@/types/auth";
+import { Avatar } from "../ui/avatar";
 
 type TopBarProps = {
   me: MeResponse;
@@ -21,13 +22,6 @@ export function TopBar({ me, onOpenMenu }: TopBarProps) {
     logout();
     router.replace("/login");
   }
-
-  const initials = me.user.full_name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 
   return (
     <header className="sticky top-0 z-30 flex min-h-[76px] items-center justify-between gap-3 border-b border-line bg-white/95 px-3 backdrop-blur sm:px-6">
@@ -54,7 +48,7 @@ export function TopBar({ me, onOpenMenu }: TopBarProps) {
       <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         <div className="hidden items-center gap-3 sm:flex">
           <div className="flex size-10 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-800">
-            {initials}
+            <Avatar name={me.user.full_name} imageUrl={me.user.profile_image_url} size="md"/>
           </div>
 
           <div className="max-w-44">

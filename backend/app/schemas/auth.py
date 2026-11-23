@@ -39,10 +39,11 @@ class UserOut(BaseModel):
     full_name: str
     email: EmailStr
     phone: str | None
+    profile_image_url: str | None = None
 
 
 class BusinessOut(BaseModel):
-    model_config = ConfigDict(from_attribute=True)
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str

@@ -11,6 +11,7 @@ export type User = {
   full_name: string;
   email: string;
   phone: string | null;
+  profile_image_url: string | null
 };
 
 export type Business = {

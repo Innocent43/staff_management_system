@@ -11,6 +11,7 @@ from app.schemas.employee import (
 from app.security.dependencies import require_roles
 from app.security.rate_limit import check_rate_limit
 from app.services import invite_service,employee_service
+from app.services.user_service import user_to_response
 
 router = APIRouter(prefix="/employees", tags=["Employees"])
 
@@ -26,7 +27,8 @@ def employee_to_dict(profile: EmployeeProfile)->dict:
         "schedule_id": profile.schedule_id,
         "role": profile.membership.role,
         "status": profile.membership.status,
-        "user": profile.membership.user,
+        "user": user_to_response(profile.membership.user),
+        # "user": profile.membership.user,
     }
 
 

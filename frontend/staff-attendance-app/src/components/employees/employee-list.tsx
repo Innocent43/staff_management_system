@@ -10,6 +10,7 @@ import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/cn";
 import { useEmployees } from "@/hooks/use-employees";
 import type { MembershipStatus } from "@/types/employee";
+import { Avatar } from "../ui/avatar";
 
 export const PAGE_SIZE = 10;
 
@@ -78,15 +79,28 @@ export function EmployeeList({ search, status, page, onPageChange }: Props) {
             <tbody>
               {rows.map((employee) => (
                 <tr key={employee.id} className="border-t border-navy-100">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/dashboard/employees/${employee.id}`}
-                      className="font-medium text-navy-900 hover:underline"
-                    >
-                      {employee.user.full_name}
-                    </Link>
-                    <p className="text-navy-500">{employee.user.email}</p>
-                  </td>
+                  
+    <td className="px-4 py-3">
+  <div className="flex items-center gap-3">
+    <Avatar
+      name={employee.user.full_name}
+      imageUrl={employee.user.profile_image_url}
+      size="md"
+    />
+
+    <div className="min-w-0">
+      <Link
+        href={`/dashboard/employees/${employee.id}`}
+        className="font-medium text-navy-900 hover:underline"
+      >
+        {employee.user.full_name}
+      </Link>
+
+      <p className="text-navy-500">{employee.user.email}</p>
+    </div>
+  </div>
+</td>
+
                   <td className="px-4 py-3 capitalize">{employee.role}</td>
                   <td className="px-4 py-3">
                     <span

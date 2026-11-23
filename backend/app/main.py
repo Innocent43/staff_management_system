@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import auth,employees,schedules,workplaces,attendance,audit_log,tasks,pay_summaries,wage_rules,reports
+from app.api import auth,employees,schedules,workplaces,attendance,audit_log,tasks,pay_summaries,wage_rules,reports,users
 from app.core.logging import setup_logging
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -17,6 +17,7 @@ app.add_middleware(
     allow_headers=["Authorization","Content-Type"],
 )
 app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(employees.router)
 app.include_router(schedules.router)
 app.include_router(workplaces.router)
@@ -26,6 +27,7 @@ app.include_router(tasks.router)
 app.include_router(wage_rules.router)
 app.include_router(pay_summaries.router)
 app.include_router(reports.router)
+
 
 @app.get("/health")
 def health_check():

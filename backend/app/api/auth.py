@@ -10,6 +10,7 @@ from app.security.dependencies import get_current_membership
 from app.security.rate_limit import check_rate_limit,rate_limit_by_ip
 
 from app.services import auth_service,invite_service
+from app.services.user_service import user_to_response
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -32,7 +33,7 @@ def login(data: LoginRequest, db: Session=Depends(get_db)):
 @router.get("/me", response_model=MeResponse)
 def get_me(membership=Depends(get_current_membership)):
     return {
-        "user": membership.user,
+        "user": user_to_response(membership.user),
         "business": membership.business,
         "role": membership.role
     }

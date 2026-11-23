@@ -8,6 +8,7 @@ export type EmployeeUser = {
   full_name: string;
   email: string;
   phone: string | null;
+  profile_image_url: string | null
 };
 
 // What the backend sends back (EmployeeOut)

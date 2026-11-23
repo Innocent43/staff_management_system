@@ -11,11 +11,14 @@ class Settings(BaseSettings):
     brevo_api_key: str | None = None
     geoapify_api_key: str | None = None
     
-    # smtp_host: str | None = None
-    # smtp_port: int = 587
-    # smtp_user: str | None = None
-    # smtp_password: str | None = None
+    
     email_from: str = "no-reply@localhost"
+    
+    #cloudflare R2 storage
+    r2_endpoint_url: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_bucket_name: str | None = None
 
 
     model_config = SettingsConfigDict(env_file=".env")
